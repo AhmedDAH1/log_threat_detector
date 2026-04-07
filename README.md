@@ -7,7 +7,7 @@
 
 ## Architecture
 
-![Architecture](assets/architecture.png)
+![Architecture](assets/architecture.svg)
 
 > Log files → Parsers → Detection engines → Alert output + JSON report
 
