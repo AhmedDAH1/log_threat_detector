@@ -5,6 +5,12 @@
 ![Tests](https://img.shields.io/badge/Tests-14%20passing-brightgreen?style=flat-square)
 ![Domain](https://img.shields.io/badge/Domain-Cybersecurity-red?style=flat-square)
 
+## Architecture
+
+![Architecture](assets/architecture.png)
+
+> Log files → Parsers → Detection engines → Alert output + JSON report
+
 A SIEM-style log analysis tool that ingests syslog, Apache, and SSH logs and detects suspicious activity using rule-based heuristics.
 
 Built as a portfolio-grade cybersecurity project in Python.
