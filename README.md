@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat-square&logo=python)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![Tests](https://img.shields.io/badge/Tests-14%20passing-brightgreen?style=flat-square)
+![Tests](https://github.com/AhmedDAH1/log_threat_detector/actions/workflows/tests.yml/badge.svg)
 ![Domain](https://img.shields.io/badge/Domain-Cybersecurity-red?style=flat-square)
 
 ## Architecture
