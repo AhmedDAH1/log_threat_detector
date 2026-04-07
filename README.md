@@ -15,7 +15,9 @@ A SIEM-style log analysis tool that ingests syslog, Apache, and SSH logs and det
 
 Built as a portfolio-grade cybersecurity project in Python.
 ---
+## Demo
 
+![Demo](assets/demo.gif)
 ## Features
 
 | Detection | Log Source | Severity |
