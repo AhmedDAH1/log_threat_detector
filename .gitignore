@@ -7,3 +7,4 @@ venv/
 *.json
 .DS_Storeoutput/*.json
 logs/*.log
+.DS_Store
