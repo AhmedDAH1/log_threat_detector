@@ -14,6 +14,7 @@ from detection.brute_force import detect_brute_force
 from detection.user_agent import detect_suspicious_user_agents
 from detection.anomaly import detect_anomalies
 from detection.port_scan import detect_port_scan
+from detection.watch_mode import watch
 
 from output.alert_output import print_alerts, print_summary
 from output.json_report import generate_report
@@ -34,14 +35,15 @@ def build_parser() -> argparse.ArgumentParser:
             "  python3 main.py --ssh logs/ssh.log --brute-force\n"
             "  python3 main.py --apache logs/apache.log --user-agent --anomaly\n"
             "  python3 main.py --syslog logs/syslog.log --port-scan --report out.json\n"
+            "  python3 main.py --watch logs/ssh.log\n"
         )
     )
 
     # Log file inputs
     inputs = parser.add_argument_group("Log file inputs")
-    inputs.add_argument("--ssh",     metavar="FILE", help="Path to SSH log file")
-    inputs.add_argument("--apache",  metavar="FILE", help="Path to Apache log file")
-    inputs.add_argument("--syslog",  metavar="FILE", help="Path to syslog file")
+    inputs.add_argument("--ssh",    metavar="FILE", help="Path to SSH log file")
+    inputs.add_argument("--apache", metavar="FILE", help="Path to Apache log file")
+    inputs.add_argument("--syslog", metavar="FILE", help="Path to syslog file")
 
     # Detection modules
     detections = parser.add_argument_group("Detection modules")
@@ -50,6 +52,14 @@ def build_parser() -> argparse.ArgumentParser:
     detections.add_argument("--anomaly",     action="store_true", help="Detect high request rate anomalies")
     detections.add_argument("--port-scan",   action="store_true", help="Detect port scan attempts")
     detections.add_argument("--all",         action="store_true", help="Run all detections on all default log files")
+
+    # Watch mode
+    watch_group = parser.add_argument_group("Live monitoring")
+    watch_group.add_argument(
+        "--watch",
+        metavar="FILE",
+        help="Tail a log file in real time and detect threats as they appear"
+    )
 
     # Output options
     outputs = parser.add_argument_group("Output options")
@@ -65,13 +75,19 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def run(args: argparse.Namespace) -> None:
+
+    # Watch mode — takes priority over everything else
+    if args.watch:
+        watch(args.watch)
+        return
+
     all_alerts = []
 
     # --all flag: use default config paths and all detections
     if args.all:
-        args.ssh        = args.ssh    or CONFIG["log_paths"]["ssh"]
-        args.apache     = args.apache or CONFIG["log_paths"]["apache"]
-        args.syslog     = args.syslog or CONFIG["log_paths"]["syslog"]
+        args.ssh         = args.ssh    or CONFIG["log_paths"]["ssh"]
+        args.apache      = args.apache or CONFIG["log_paths"]["apache"]
+        args.syslog      = args.syslog or CONFIG["log_paths"]["syslog"]
         args.brute_force = True
         args.user_agent  = True
         args.anomaly     = True
