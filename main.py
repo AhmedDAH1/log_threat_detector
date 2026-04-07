@@ -32,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Examples:\n"
             "  python3 main.py --all\n"
+            "  python3 main.py --all --severity HIGH\n"
             "  python3 main.py --ssh logs/ssh.log --brute-force\n"
             "  python3 main.py --apache logs/apache.log --user-agent --anomaly\n"
             "  python3 main.py --syslog logs/syslog.log --port-scan --report out.json\n"
@@ -53,7 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     detections.add_argument("--port-scan",   action="store_true", help="Detect port scan attempts")
     detections.add_argument("--all",         action="store_true", help="Run all detections on all default log files")
 
-    # Watch mode
+    # Live monitoring
     watch_group = parser.add_argument_group("Live monitoring")
     watch_group.add_argument(
         "--watch",
@@ -63,6 +64,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Output options
     outputs = parser.add_argument_group("Output options")
+    outputs.add_argument(
+        "--severity",
+        metavar="LEVEL",
+        default="LOW",
+        choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+        help="Minimum severity to display: LOW | MEDIUM | HIGH | CRITICAL (default: LOW)"
+    )
     outputs.add_argument(
         "--report",
         metavar="FILE",
@@ -103,7 +111,7 @@ def run(args: argparse.Namespace) -> None:
             print(f"── SSH: {args.ssh} ({len(ssh_entries)} entries) ───────────────")
             if args.brute_force:
                 alerts = detect_brute_force(ssh_entries)
-                print_alerts(alerts)
+                print_alerts(alerts, min_severity=args.severity)
                 all_alerts.extend(alerts)
         except FileNotFoundError:
             print(Fore.RED + f"  [ERROR] SSH log not found: {args.ssh}")
@@ -115,11 +123,11 @@ def run(args: argparse.Namespace) -> None:
             print(f"── Apache: {args.apache} ({len(apache_entries)} entries) ──────────────")
             if args.user_agent:
                 alerts = detect_suspicious_user_agents(apache_entries)
-                print_alerts(alerts)
+                print_alerts(alerts, min_severity=args.severity)
                 all_alerts.extend(alerts)
             if args.anomaly:
                 alerts = detect_anomalies(apache_entries)
-                print_alerts(alerts)
+                print_alerts(alerts, min_severity=args.severity)
                 all_alerts.extend(alerts)
         except FileNotFoundError:
             print(Fore.RED + f"  [ERROR] Apache log not found: {args.apache}")
@@ -131,7 +139,7 @@ def run(args: argparse.Namespace) -> None:
             print(f"── Syslog: {args.syslog} ({len(syslog_entries)} entries) ──────────────")
             if args.port_scan:
                 alerts = detect_port_scan(syslog_entries)
-                print_alerts(alerts)
+                print_alerts(alerts, min_severity=args.severity)
                 all_alerts.extend(alerts)
         except FileNotFoundError:
             print(Fore.RED + f"  [ERROR] Syslog not found: {args.syslog}")
@@ -140,7 +148,7 @@ def run(args: argparse.Namespace) -> None:
         print(Fore.YELLOW + "  No log files specified. Use --help to see usage.")
         sys.exit(0)
 
-    print_summary(all_alerts)
+    print_summary(all_alerts, min_severity=args.severity)
 
     if args.report:
         generate_report(all_alerts, args.report)
