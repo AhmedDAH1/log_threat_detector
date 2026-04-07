@@ -77,6 +77,9 @@ python3 main.py --apache logs/apache.log --user-agent --anomaly
 
 # Run port scan detection and save a custom report
 python3 main.py --syslog logs/syslog.log --port-scan --report output/report.json
+
+# Watch a log file in real time for live threat detection
+python3 main.py --watch logs/ssh.log
 ```
 
 ### All CLI options
@@ -92,6 +95,7 @@ Detection modules:
   --anomaly        Detect high request rate anomalies
   --port-scan      Detect port scan attempts
   --all            Run all detections on all default log files
+  --watch FILE     Tail a log file in real time and detect threats as they appear
 
 Output options:
   --report [FILE]  Save JSON report (default: output/report.json)
