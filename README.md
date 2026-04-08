@@ -48,7 +48,20 @@ Then open http://localhost:5000 in your browser.
 | AbuseIPDB threat intelligence | All alerts | — |
 | Real-time monitoring (`--watch`) | Any supported log | — |
 | Email alerting | Watch mode (HIGH/CRITICAL) | — |
+| Alert persistence | SQLite database | — |
 
+---
+
+## Alert Persistence (SQLite)
+
+All detected alerts are automatically saved to a local SQLite database (`alerts.db`).  
+This allows historical analysis and threat tracking across multiple runs.
+
+### View Alert History
+
+```bash
+python3 main.py --history
+```
 ---
 
 ## How the Correlation Engine Works
@@ -115,7 +128,8 @@ log_threat_detector/
 ├── output/
 │   ├── alert_output.py        # Colored terminal output with severity filter
 │   ├── json_report.py         # JSON report generator
-│   └── email_alert.py         # Email notifications for HIGH/CRITICAL alerts
+│   ├── email_alert.py         # Email notifications for HIGH/CRITICAL alerts
+│   └── db.py         
 ├── logs/                      # Sample log files
 ├── tests/                     # Unit tests (14 tests)
 └── requirements.txt
