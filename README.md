@@ -92,11 +92,13 @@ python3 main.py --syslog logs/syslog.log --port-scan --report output/report.json
 python3 main.py --watch logs/ssh.log
 ```
 ## Examples
+```bash
 # Show only high severity alerts
 python3 main.py --all --severity HIGH
 
 # Watch a log file live for real-time threat detection
 python3 main.py --watch logs/ssh.log
+```
 
 ### All CLI options
 ```
