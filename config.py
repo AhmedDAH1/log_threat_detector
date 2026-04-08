@@ -3,6 +3,12 @@
 # Adjust thresholds here without touching detection logic
 
 CONFIG = {
+    "threat_intel": {
+    "enabled": True,
+    "abuseipdb_api_key": "***REMOVED***",
+    "min_abuse_score": 50,      # flag IPs with score above this
+    "cache_ttl_seconds": 3600,  # cache results for 1 hour
+},
     "email": {
     "enabled": False,
     "smtp_host": "smtp.gmail.com",

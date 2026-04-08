@@ -23,6 +23,8 @@ def filter_by_severity(alerts: list[Alert], min_severity: str) -> list[Alert]:
 
 
 def print_alerts(alerts: list[Alert], min_severity: str = "LOW") -> None:
+    from detection.threat_intel import enrich_alert_with_intel
+
     filtered = filter_by_severity(alerts, min_severity)
 
     if not filtered:
@@ -36,6 +38,12 @@ def print_alerts(alerts: list[Alert], min_severity: str = "LOW") -> None:
         print(f"    {alert.description}")
         print(Style.DIM + f"    First seen : {alert.timestamp}")
         print(Style.DIM + f"    Evidence   : {len(alert.evidence)} log line(s)")
+
+        # Threat intel enrichment
+        intel = enrich_alert_with_intel(alert.source_ip)
+        if intel:
+            print(Fore.MAGENTA + f"    {intel}")
+
         print()
 
 

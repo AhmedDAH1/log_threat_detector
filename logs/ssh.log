@@ -20,3 +20,9 @@ Dec 10 07:45:03 server sshd[1234]: Failed password for root from 55.55.55.55 por
 Dec 10 07:45:04 server sshd[1234]: Failed password for root from 55.55.55.55 port 22 ssh2
 Dec 10 07:45:05 server sshd[1234]: Failed password for root from 55.55.55.55 port 22 ssh2
 Dec 10 07:45:06 server sshd[1234]: Failed password for root from 55.55.55.55 port 22 ssh2
+Dec 10 08:00:01 server sshd[1234]: Failed password for root from 80.82.77.33 port 22 ssh2
+Dec 10 08:00:02 server sshd[1234]: Failed password for root from 80.82.77.33 port 22 ssh2
+Dec 10 08:00:03 server sshd[1234]: Failed password for root from 80.82.77.33 port 22 ssh2
+Dec 10 08:00:04 server sshd[1234]: Failed password for root from 80.82.77.33 port 22 ssh2
+Dec 10 08:00:05 server sshd[1234]: Failed password for root from 80.82.77.33 port 22 ssh2
+Dec 10 08:00:06 server sshd[1234]: Failed password for root from 80.82.77.33 port 22 ssh2
