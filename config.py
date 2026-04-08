@@ -3,6 +3,14 @@
 # Adjust thresholds here without touching detection logic
 
 CONFIG = {
+    "email": {
+    "enabled": False,
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 587,
+    "sender_email": "",
+    "sender_password": "",
+    "recipient_email": "",
+},
     "brute_force": {
         "max_failed_attempts": 5,       # failed logins before alert
         "time_window_seconds": 60,      # within this time window
@@ -27,4 +35,5 @@ CONFIG = {
         "report_path": "output/report.json",
         "alert_level": "WARNING",       # INFO | WARNING | CRITICAL
     }
+    
 }
