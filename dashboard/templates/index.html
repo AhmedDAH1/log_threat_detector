@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log Threat Detector — Ahmed Dahdouh</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    :root[data-theme="dark"] {
+      --bg:       #0a0e17;
+      --surface:  #0d1420;
+      --border:   #1e2a3a;
+      --text:     #e6edf3;
+      --muted:    #4d6a8a;
+      --dim:      #2d4a6a;
+      --critical: #cc0000;
+      --high:     #ff4444;
+      --medium:   #f0a500;
+      --low:      #3fb950;
+      --accent:   #4d9eff;
+      --intel:    #b478f5;
+    }
+    :root[data-theme="light"] {
+      --bg:       #f0f4f8;
+      --surface:  #ffffff;
+      --border:   #d0dbe8;
+      --text:     #0d1420;
+      --muted:    #5a7a99;
+      --dim:      #8aa0b8;
+      --critical: #cc0000;
+      --high:     #e03030;
+      --medium:   #b07800;
+      --low:      #1a7f37;
+      --accent:   #1a6bc4;
+      --intel:    #7c3aed;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 13px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
+
+    .logo { display: flex; align-items: center; gap: 9px; }
+
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: #1a4b8c;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .logo-text { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
+    .logo-text span { color: var(--accent); }
+
+    .hdr-divider { width: 1px; height: 18px; background: var(--border); }
+
+    .built-by { font-size: 12px; color: var(--muted); }
+    .built-by a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .built-by a:hover { text-decoration: underline; }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    .live-badge {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--low); font-weight: 600; letter-spacing: 0.5px;
+    }
+
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--low);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .theme-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.15s;
+    }
+    .theme-btn:hover { background: var(--border); }
+
+    /* ── Main ── */
+    main { padding: 20px 24px; max-width: 1300px; margin: 0 auto; }
+
+    /* ── Stat cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+
+    .stat-label {
+      font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
+    }
+
+    .stat-value { font-size: 30px; font-weight: 700; font-family: monospace; }
+    .v-blue   { color: var(--accent); }
+    .v-red    { color: var(--high); }
+    .v-amber  { color: var(--medium); }
+    .v-green  { color: var(--low); }
+
+    /* ── Two-column grid ── */
+    .grid-two {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 800px) { .grid-two { grid-template-columns: 1fr; } }
+
+    /* ── Panels ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-hdr {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .panel-title {
+      font-size: 10px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    .count-badge {
+      background: var(--high); color: white;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 10px;
+    }
+
+    /* ── Alert feed ── */
+    .alert-feed { max-height: 500px; overflow-y: auto; }
+
+    .alert-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+    .alert-item:last-child { border-bottom: none; }
+
+    .alert-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
+
+    .sev {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+
+    .sev-CRITICAL { background: var(--critical); color: white; }
+    .sev-HIGH     { background: var(--high);     color: white; }
+    .sev-MEDIUM   { background: var(--medium);   color: white; }
+    .sev-LOW      { background: var(--low);      color: white; }
+
+    .alert-type { font-size: 13px; font-weight: 600; color: var(--text); }
+    .alert-ip   { font-size: 12px; color: var(--accent); font-family: monospace; }
+    .alert-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .alert-intel { font-size: 11px; color: var(--intel); margin-top: 3px; }
+    .alert-time { font-size: 10px; color: var(--dim); margin-top: 4px; font-family: monospace; }
+
+    /* ── Top IPs ── */
+    .ip-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ip-row:last-child { border-bottom: none; }
+
+    .ip-addr { font-family: monospace; font-size: 12px; color: var(--accent); min-width: 108px; }
+
+    .bar-wrap { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .bar { height: 100%; background: var(--high); border-radius: 2px; transition: width 0.4s ease; }
+
+    .ip-count { font-size: 11px; color: var(--muted); font-family: monospace; min-width: 18px; text-align: right; }
+
+    .empty { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 20px;
+      padding: 12px 24px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; color: var(--dim);
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <div class="logo">
+        <div class="logo-icon">🔍</div>
+        <div class="logo-text">Log Threat <span>Detector</span></div>
+      </div>
+      <div class="hdr-divider"></div>
+      <div class="built-by">Built by <a href="https://github.com/AhmedDAH1" target="_blank">Ahmed Dahdouh</a></div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <button class="theme-btn" onclick="toggleTheme()">☀ Toggle Theme</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Alerts</div>
+        <div class="stat-value v-blue" id="stat-total">{{ stats.total }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">High / Critical</div>
+        <div class="stat-value v-red" id="stat-critical">{{ stats.critical }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Medium</div>
+        <div class="stat-value v-amber" id="stat-medium">{{ stats.medium }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unique IPs</div>
+        <div class="stat-value v-green" id="stat-ips">{{ stats.top_ips | length }}</div>
+      </div>
+    </div>
+
+    <div class="grid-two">
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Live Alert Feed</span>
+          <span class="count-badge" id="alert-count">{{ stats.total }}</span>
+        </div>
+        <div class="alert-feed" id="alert-feed">
+          {% if stats.recent %}
+            {% for alert in stats.recent %}
+            <div class="alert-item">
+              <div class="alert-top">
+                <span class="sev sev-{{ alert.severity }}">{{ alert.severity }}</span>
+                <span class="alert-type">{{ alert.alert_type }}</span>
+                <span class="alert-ip">{{ alert.source_ip }}</span>
+              </div>
+              <div class="alert-desc">{{ alert.description[:90] }}{% if alert.description|length > 90 %}...{% endif %}</div>
+              <div class="alert-time">{{ alert.timestamp }} · {{ alert.evidence }} log line(s)</div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty">No alerts yet — run python3 main.py --watch logs/ssh.log --dashboard</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Top Attacking IPs</span>
+        </div>
+        <div id="top-ips">
+          {% if stats.top_ips %}
+            {% set max_count = stats.top_ips[0][1] %}
+            {% for ip, count in stats.top_ips %}
+            <div class="ip-row">
+              <span class="ip-addr">{{ ip }}</span>
+              <div class="bar-wrap">
+                <div class="bar" style="width:{{ (count / max_count * 100)|int }}%"></div>
+              </div>
+              <span class="ip-count">{{ count }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty">No data yet</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>log_threat_detector v1.0.0 · 14 tests passing · MIT License</span>
+    <span>Built by <a href="https://github.com/AhmedDAH1" target="_blank">Ahmed Dahdouh</a> · <a href="https://github.com/AhmedDAH1/log_threat_detector" target="_blank">GitHub</a></span>
+  </footer>
+
+  <script>
+    const socket = io();
+
+    socket.on("connect", () => console.log("Dashboard connected"));
+
+    socket.on("new_alert", (alert) => {
+      const total = parseInt(document.getElementById("stat-total").textContent) + 1;
+      document.getElementById("stat-total").textContent = total;
+      document.getElementById("alert-count").textContent = total;
+
+      if (["HIGH", "CRITICAL"].includes(alert.severity)) {
+        const c = parseInt(document.getElementById("stat-critical").textContent) + 1;
+        document.getElementById("stat-critical").textContent = c;
+      } else if (alert.severity === "MEDIUM") {
+        const m = parseInt(document.getElementById("stat-medium").textContent) + 1;
+        document.getElementById("stat-medium").textContent = m;
+      }
+
+      const feed = document.getElementById("alert-feed");
+      const empty = feed.querySelector(".empty");
+      if (empty) empty.remove();
+
+      const desc = alert.description.length > 90
+        ? alert.description.substring(0, 90) + "..."
+        : alert.description;
+
+      const intel = alert.intel
+        ? `<div class="alert-intel">${alert.intel}</div>`
+        : "";
+
+      const item = document.createElement("div");
+      item.className = "alert-item";
+      item.innerHTML = `
+        <div class="alert-top">
+          <span class="sev sev-${alert.severity}">${alert.severity}</span>
+          <span class="alert-type">${alert.alert_type}</span>
+          <span class="alert-ip">${alert.source_ip}</span>
+        </div>
+        <div class="alert-desc">${desc}</div>
+        ${intel}
+        <div class="alert-time">${alert.timestamp} · ${alert.evidence} log line(s)</div>
+      `;
+      feed.insertBefore(item, feed.firstChild);
+    });
+
+    socket.on("init", (data) => {
+      document.getElementById("stat-total").textContent    = data.total;
+      document.getElementById("stat-critical").textContent = data.critical;
+      document.getElementById("stat-medium").textContent   = data.medium;
+      document.getElementById("alert-count").textContent   = data.total;
+    });
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.setAttribute("data-theme",
+        html.getAttribute("data-theme") === "dark" ? "light" : "dark"
+      );
+    }
+  </script>
+</body>
+</html>
