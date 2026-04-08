@@ -63,6 +63,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Tail a log file in real time and detect threats as they appear"
     )
 
+    watch_group.add_argument(
+    "--dashboard",
+    action="store_true",
+    help="Launch web dashboard at http://localhost:5000"
+    )
+
     # Output options
     outputs = parser.add_argument_group("Output options")
     outputs.add_argument(
@@ -85,10 +91,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 def run(args: argparse.Namespace) -> None:
 
-    # Watch mode — takes priority over everything else
     if args.watch:
+        if args.dashboard:
+            from dashboard.server import start_dashboard
+            from detection.watch_mode import enable_dashboard
+            start_dashboard()
+            enable_dashboard()
         watch(args.watch)
         return
+
 
     all_alerts = []
 
