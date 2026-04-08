@@ -26,6 +26,7 @@ Built as a portfolio-grade cybersecurity project in Python.
 | Port scan detection | Syslog (UFW/iptables) | HIGH |
 | Suspicious user agents | Apache logs | MEDIUM |
 | Anomaly / high request rate | Apache logs | MEDIUM |
+| Email alerting (watch mode) | HIGH/CRITICAL alerts | HIGH |
 
 ---
 
@@ -64,6 +65,15 @@ pip install -r requirements.txt
 
 ---
 
+## Makefile
+
+```bash
+make run      # run all detections on default log files
+make test     # run all 14 unit tests
+make watch    # start live monitoring on ssh log
+make clean    # remove cache and generated reports
+```
+
 ## Usage
 ```bash
 # Run all detections on all default log files
@@ -81,6 +91,12 @@ python3 main.py --syslog logs/syslog.log --port-scan --report output/report.json
 # Watch a log file in real time for live threat detection
 python3 main.py --watch logs/ssh.log
 ```
+## Examples
+# Show only high severity alerts
+python3 main.py --all --severity HIGH
+
+# Watch a log file live for real-time threat detection
+python3 main.py --watch logs/ssh.log
 
 ### All CLI options
 ```
@@ -98,6 +114,8 @@ Detection modules:
   --watch FILE     Tail a log file in real time and detect threats as they appear
 
 Output options:
+  --severity LEVEL  Minimum severity to display: LOW | MEDIUM | HIGH | CRITICAL (default: LOW)
+  --watch FILE      Tail a log file in real time and detect threats as they appear
   --report [FILE]  Save JSON report (default: output/report.json)
 ```
 
