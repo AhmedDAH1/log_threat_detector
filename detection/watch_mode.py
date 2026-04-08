@@ -15,6 +15,9 @@ from detection.anomaly import detect_anomalies
 from detection.port_scan import detect_port_scan
 
 from output.alert_output import print_alerts
+from output.email_alert import send_email_alert
+
+from config import CONFIG
 
 init(autoreset=True)
 
@@ -61,6 +64,7 @@ def watch(filepath: str, interval: float = 1.0) -> None:
 
     last_size = 0
     seen_alerts = set()
+    email_cfg = CONFIG.get("email", {})
 
     try:
         while True:
@@ -82,6 +86,19 @@ def watch(filepath: str, interval: float = 1.0) -> None:
                         if key not in seen_alerts:
                             seen_alerts.add(key)
                             print_alerts([alert])
+
+                            # Send email if enabled and severity is HIGH or CRITICAL
+                            if email_cfg.get("enabled") and alert.severity in ("HIGH", "CRITICAL"):
+                                sent = send_email_alert(
+                                    alert=alert,
+                                    sender_email=email_cfg["sender_email"],
+                                    sender_password=email_cfg["sender_password"],
+                                    recipient_email=email_cfg["recipient_email"],
+                                    smtp_host=email_cfg["smtp_host"],
+                                    smtp_port=email_cfg["smtp_port"],
+                                )
+                                if sent:
+                                    print(Fore.CYAN + f"  📧 Email alert sent to {email_cfg['recipient_email']}")
 
             time.sleep(interval)
 
