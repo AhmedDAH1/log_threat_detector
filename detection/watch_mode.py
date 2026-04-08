@@ -19,6 +19,13 @@ from output.email_alert import send_email_alert
 
 from config import CONFIG
 
+from dashboard.server import push_alert as _push_alert
+_dashboard_enabled = False
+
+def enable_dashboard():
+    global _dashboard_enabled
+    _dashboard_enabled = True
+
 init(autoreset=True)
 
 PARSERS = {
@@ -86,6 +93,12 @@ def watch(filepath: str, interval: float = 1.0) -> None:
                         if key not in seen_alerts:
                             seen_alerts.add(key)
                             print_alerts([alert])
+
+                            if _dashboard_enabled:
+                                try:
+                                    _push_alert(alert)
+                                except Exception:
+                                    pass
 
                             # Send email if enabled and severity is HIGH or CRITICAL
                             if email_cfg.get("enabled") and alert.severity in ("HIGH", "CRITICAL"):
