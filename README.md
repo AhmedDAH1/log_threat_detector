@@ -5,7 +5,7 @@
 ![Tests](https://github.com/AhmedDAH1/log_threat_detector/actions/workflows/tests.yml/badge.svg)
 ![Domain](https://img.shields.io/badge/Domain-Cybersecurity-red?style=flat-square)
 
-A SIEM-style threat detection CLI that parses SSH, Apache, and syslog files to detect brute-force attacks, port scans, and suspicious activity — with real-time monitoring, email alerting, and a correlation engine that connects multi-vector attacks from the same source.
+A SIEM-style threat detection CLI that parses SSH, Apache, and syslog files to detect brute-force attacks, port scans, and suspicious activity — with real-time monitoring, email alerting, a correlation engine that connects multi-vector attacks, and live threat intelligence via AbuseIPDB.
 
 ---
 
@@ -13,7 +13,7 @@ A SIEM-style threat detection CLI that parses SSH, Apache, and syslog files to d
 
 ![Architecture](assets/architecture.svg)
 
-> Log files → Parsers → Detection engines → Correlation engine → Alert output + JSON report
+> Log files → Parsers → Detection engines → Correlation engine → Threat intelligence → Alert output + JSON report
 
 ---
 
@@ -32,6 +32,7 @@ A SIEM-style threat detection CLI that parses SSH, Apache, and syslog files to d
 | Suspicious user agents | Apache logs | MEDIUM |
 | Anomaly / high request rate | Apache logs | MEDIUM |
 | Multi-vector correlation engine | All sources | CRITICAL |
+| AbuseIPDB threat intelligence | All alerts | — |
 | Real-time monitoring (`--watch`) | Any supported log | — |
 | Email alerting | Watch mode (HIGH/CRITICAL) | — |
 
@@ -49,6 +50,31 @@ Most log parsers fire independent alerts. This tool goes further — it groups a
 | All three | `FULL_COMPROMISE_ATTEMPT` | Same IP triggers every attack vector |
 
 When a pattern is matched, all contributing alerts are merged into a single `CRITICAL` alert with combined evidence — exactly how commercial SIEM tools like Splunk operate.
+
+---
+
+## Threat Intelligence
+
+Every alert is automatically enriched with live threat intelligence from AbuseIPDB. Known malicious IPs are flagged instantly:
+
+```
+[HIGH] BRUTE_FORCE — 80.82.77.33
+  6 failed login attempts in 60s targeting user(s): root
+  🌐 Threat Intel: KNOWN MALICIOUS (abuse score: 100% | reports: 8209 | country: NL | ISP: FiberXpress BV)
+```
+
+Configure in `config.py`:
+
+```python
+"threat_intel": {
+    "enabled": True,
+    "abuseipdb_api_key": "YOUR_API_KEY_HERE",
+    "min_abuse_score": 50,
+    "cache_ttl_seconds": 3600,
+}
+```
+
+> Get a free API key at https://www.abuseipdb.com — 1000 lookups/day on the free tier. Never commit your API key to the repo.
 
 ---
 
@@ -71,7 +97,8 @@ log_threat_detector/
 │   ├── user_agent.py          # Suspicious user agent detection
 │   ├── anomaly.py             # High request rate anomaly detection
 │   ├── correlation.py         # Multi-vector attack correlation engine
-│   └── watch_mode.py          # Real-time log tailing engine
+│   ├── watch_mode.py          # Real-time log tailing engine
+│   └── threat_intel.py        # AbuseIPDB threat intelligence integration
 ├── output/
 │   ├── alert_output.py        # Colored terminal output with severity filter
 │   ├── json_report.py         # JSON report generator
@@ -177,11 +204,12 @@ When running in `--watch` mode, the tool sends email notifications for HIGH and 
 ```
 🔍 Log Threat Detector — Starting Analysis
 
-── SSH: logs/ssh.log (22 entries) ───────────────
-  [HIGH] BRUTE_FORCE — 192.168.1.105
-    7 failed login attempts in 60s targeting user(s): root, admin
-    First seen : 2026-12-10 06:55:48
-    Evidence   : 7 log line(s)
+── SSH: logs/ssh.log (28 entries) ───────────────
+  [HIGH] BRUTE_FORCE — 80.82.77.33
+    6 failed login attempts in 60s targeting user(s): root
+    First seen : 2026-12-10 08:00:01
+    Evidence   : 6 log line(s)
+    🌐 Threat Intel: KNOWN MALICIOUS (abuse score: 100% | reports: 8209 | country: NL | ISP: FiberXpress BV)
 
 ── Apache: logs/apache.log (11 entries) ─────────
   [MEDIUM] SUSPICIOUS_USER_AGENT — 45.33.32.156
@@ -199,8 +227,8 @@ When running in `--watch` mode, the tool sends email notifications for HIGH and 
     Evidence   : 12 log line(s)
 
 ========== SUMMARY ==========
-  Total alerts : 8
-  High/Critical: 5
+  Total alerts : 9
+  High/Critical: 6
   Medium       : 3
   Low          : 0
 ==============================
@@ -225,6 +253,12 @@ CONFIG = {
     "anomaly": {
         "request_rate_per_minute": 100,
     },
+    "threat_intel": {
+        "enabled": True,
+        "abuseipdb_api_key": "YOUR_API_KEY_HERE",
+        "min_abuse_score": 50,
+        "cache_ttl_seconds": 3600,
+    },
 }
 ```
 
@@ -234,6 +268,7 @@ CONFIG = {
 
 - **Language**: Python 3.10+
 - **Libraries**: `colorama` for terminal output
+- **External API**: AbuseIPDB for live threat intelligence
 - **Architecture**: Modular — parsers, detectors, and output fully decoupled
 - **CI**: GitHub Actions — 14 tests run automatically on every push
 
