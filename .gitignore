@@ -3,8 +3,5 @@ __pycache__/
 *.pyo
 .env
 venv/
-*.log
-*.json
-.DS_Storeoutput/*.json
-logs/*.log
 .DS_Store
+output/*.json
