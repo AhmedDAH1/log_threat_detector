@@ -11,9 +11,7 @@
 
 > Log files → Parsers → Detection engines → Alert output + JSON report
 
-A SIEM-style log analysis tool that ingests syslog, Apache, and SSH logs and detects suspicious activity using rule-based heuristics.
-
-Built as a portfolio-grade cybersecurity project in Python.
+A lightweight SIEM-style threat detection tool that analyzes SSH, Apache, and syslog files to detect brute-force attacks, port scans, and suspicious activity in real time.
 ---
 ## Demo
 
