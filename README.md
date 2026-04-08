@@ -22,7 +22,20 @@ A SIEM-style threat detection CLI that parses SSH, Apache, and syslog files to d
 ![Demo](assets/demo.gif)
 
 ---
+## Web Dashboard
 
+Run with `--dashboard` flag to launch the live web interface:
+
+```bash
+python3 main.py --watch logs/ssh.log --dashboard
+```
+
+Then open http://localhost:5000 in your browser.
+
+![Dashboard Dark](assets/dashboard_dark.png)
+![Dashboard Light](assets/dashboard_light.png)
+
+---
 ## Features
 
 | Detection | Log Source | Severity |
