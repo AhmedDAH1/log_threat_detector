@@ -5,6 +5,7 @@
 import argparse
 import sys
 from colorama import Fore, Style, init
+from detection.correlation import correlate_alerts
 
 from parser.ssh_parser import parse_ssh_log
 from parser.apache_parser import parse_apache_log
@@ -147,6 +148,16 @@ def run(args: argparse.Namespace) -> None:
     if not all_alerts and not any([args.ssh, args.apache, args.syslog]):
         print(Fore.YELLOW + "  No log files specified. Use --help to see usage.")
         sys.exit(0)
+
+    # Correlation engine — run after all individual detections
+    if all_alerts:
+        print("── Correlation Engine ────────────────────")
+        correlated = correlate_alerts(all_alerts)
+        if correlated:
+            print_alerts(correlated, min_severity=args.severity)
+            all_alerts.extend(correlated)
+        else:
+            print(Fore.GREEN + "  No correlated attack patterns detected.\n")
 
     print_summary(all_alerts, min_severity=args.severity)
 
