@@ -20,6 +20,9 @@ from detection.watch_mode import watch
 from output.alert_output import print_alerts, print_summary
 from output.json_report import generate_report
 
+# NEW: Database imports
+from output.db import init_db, save_alert, show_history
+
 from config import CONFIG
 
 init(autoreset=True)
@@ -38,22 +41,23 @@ def build_parser() -> argparse.ArgumentParser:
             "  python3 main.py --apache logs/apache.log --user-agent --anomaly\n"
             "  python3 main.py --syslog logs/syslog.log --port-scan --report out.json\n"
             "  python3 main.py --watch logs/ssh.log\n"
+            "  python3 main.py --history\n"
         )
     )
 
     # Log file inputs
     inputs = parser.add_argument_group("Log file inputs")
-    inputs.add_argument("--ssh",    metavar="FILE", help="Path to SSH log file")
+    inputs.add_argument("--ssh", metavar="FILE", help="Path to SSH log file")
     inputs.add_argument("--apache", metavar="FILE", help="Path to Apache log file")
     inputs.add_argument("--syslog", metavar="FILE", help="Path to syslog file")
 
     # Detection modules
     detections = parser.add_argument_group("Detection modules")
     detections.add_argument("--brute-force", action="store_true", help="Detect brute force login attempts")
-    detections.add_argument("--user-agent",  action="store_true", help="Detect suspicious user agents")
-    detections.add_argument("--anomaly",     action="store_true", help="Detect high request rate anomalies")
-    detections.add_argument("--port-scan",   action="store_true", help="Detect port scan attempts")
-    detections.add_argument("--all",         action="store_true", help="Run all detections on all default log files")
+    detections.add_argument("--user-agent", action="store_true", help="Detect suspicious user agents")
+    detections.add_argument("--anomaly", action="store_true", help="Detect high request rate anomalies")
+    detections.add_argument("--port-scan", action="store_true", help="Detect port scan attempts")
+    detections.add_argument("--all", action="store_true", help="Run all detections on all default log files")
 
     # Live monitoring
     watch_group = parser.add_argument_group("Live monitoring")
@@ -64,9 +68,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     watch_group.add_argument(
-    "--dashboard",
-    action="store_true",
-    help="Launch web dashboard at http://localhost:5000"
+        "--dashboard",
+        action="store_true",
+        help="Launch web dashboard at http://localhost:5000"
+    )
+
+    # NEW: History
+    parser.add_argument(
+        "--history",
+        action="store_true",
+        help="Show alert history from database"
     )
 
     # Output options
@@ -76,8 +87,9 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="LEVEL",
         default="LOW",
         choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"],
-        help="Minimum severity to display: LOW | MEDIUM | HIGH | CRITICAL (default: LOW)"
+        help="Minimum severity to display"
     )
+
     outputs.add_argument(
         "--report",
         metavar="FILE",
@@ -91,6 +103,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 def run(args: argparse.Namespace) -> None:
 
+    # Initialize database
+    init_db()
+
+    # Show history
+    if args.history:
+        show_history()
+        return
+
     if args.watch:
         if args.dashboard:
             from dashboard.server import start_dashboard
@@ -100,19 +120,18 @@ def run(args: argparse.Namespace) -> None:
         watch(args.watch)
         return
 
-
     all_alerts = []
 
-    # --all flag: use default config paths and all detections
+    # --all flag
     if args.all:
-        args.ssh         = args.ssh    or CONFIG["log_paths"]["ssh"]
-        args.apache      = args.apache or CONFIG["log_paths"]["apache"]
-        args.syslog      = args.syslog or CONFIG["log_paths"]["syslog"]
+        args.ssh = args.ssh or CONFIG["log_paths"]["ssh"]
+        args.apache = args.apache or CONFIG["log_paths"]["apache"]
+        args.syslog = args.syslog or CONFIG["log_paths"]["syslog"]
         args.brute_force = True
-        args.user_agent  = True
-        args.anomaly     = True
-        args.port_scan   = True
-        args.report      = args.report or CONFIG["output"]["report_path"]
+        args.user_agent = True
+        args.anomaly = True
+        args.port_scan = True
+        args.report = args.report or CONFIG["output"]["report_path"]
 
     print(Style.BRIGHT + "\n🔍 Log Threat Detector — Starting Analysis\n")
 
@@ -125,6 +144,7 @@ def run(args: argparse.Namespace) -> None:
                 alerts = detect_brute_force(ssh_entries)
                 print_alerts(alerts, min_severity=args.severity)
                 all_alerts.extend(alerts)
+
         except FileNotFoundError:
             print(Fore.RED + f"  [ERROR] SSH log not found: {args.ssh}")
 
@@ -133,14 +153,17 @@ def run(args: argparse.Namespace) -> None:
         try:
             apache_entries = parse_apache_log(args.apache)
             print(f"── Apache: {args.apache} ({len(apache_entries)} entries) ──────────────")
+
             if args.user_agent:
                 alerts = detect_suspicious_user_agents(apache_entries)
                 print_alerts(alerts, min_severity=args.severity)
                 all_alerts.extend(alerts)
+
             if args.anomaly:
                 alerts = detect_anomalies(apache_entries)
                 print_alerts(alerts, min_severity=args.severity)
                 all_alerts.extend(alerts)
+
         except FileNotFoundError:
             print(Fore.RED + f"  [ERROR] Apache log not found: {args.apache}")
 
@@ -149,10 +172,12 @@ def run(args: argparse.Namespace) -> None:
         try:
             syslog_entries = parse_syslog(args.syslog)
             print(f"── Syslog: {args.syslog} ({len(syslog_entries)} entries) ──────────────")
+
             if args.port_scan:
                 alerts = detect_port_scan(syslog_entries)
                 print_alerts(alerts, min_severity=args.severity)
                 all_alerts.extend(alerts)
+
         except FileNotFoundError:
             print(Fore.RED + f"  [ERROR] Syslog not found: {args.syslog}")
 
@@ -160,15 +185,20 @@ def run(args: argparse.Namespace) -> None:
         print(Fore.YELLOW + "  No log files specified. Use --help to see usage.")
         sys.exit(0)
 
-    # Correlation engine — run after all individual detections
+    # Correlation engine
     if all_alerts:
         print("── Correlation Engine ────────────────────")
         correlated = correlate_alerts(all_alerts)
+
         if correlated:
             print_alerts(correlated, min_severity=args.severity)
             all_alerts.extend(correlated)
         else:
             print(Fore.GREEN + "  No correlated attack patterns detected.\n")
+
+    # Save alerts to database
+    for alert in all_alerts:
+        save_alert(alert)
 
     print_summary(all_alerts, min_severity=args.severity)
 
