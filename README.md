@@ -129,7 +129,7 @@ log_threat_detector/
 │   ├── alert_output.py        # Colored terminal output with severity filter
 │   ├── json_report.py         # JSON report generator
 │   ├── email_alert.py         # Email notifications for HIGH/CRITICAL alerts
-│   └── db.py         
+│   └── db.py                  # SQLite alert persistence and history
 ├── logs/                      # Sample log files
 ├── tests/                     # Unit tests (14 tests)
 └── requirements.txt
@@ -167,6 +167,9 @@ python3 main.py --syslog logs/syslog.log --port-scan --report output/report.json
 
 # Watch a log file in real time for live threat detection
 python3 main.py --watch logs/ssh.log
+
+# View alert history from the database
+python3 main.py --history
 ```
 
 ---
@@ -188,7 +191,11 @@ Detection modules:
 
 Live monitoring:
   --watch FILE      Tail a log file in real time and detect threats as they appear
+  --dashboard       Launch web dashboard at http://localhost:5000
 
+History:
+  --history         Show the last 20 alerts from the database
+  
 Output options:
   --severity LEVEL  Minimum severity: LOW | MEDIUM | HIGH | CRITICAL (default: LOW)
   --report [FILE]   Save JSON report (default: output/report.json)
@@ -303,4 +310,17 @@ CONFIG = {
 
 ## Author
 
-Ahmed Dahdouh — [GitHub](https://github.com/AhmedDAH1)
+## Author
+
+**Ahmed Dahdouh**
+Software Engineering Student · Cybersecurity Enthusiast
+
+[![GitHub](https://img.shields.io/badge/GitHub-AhmedDAH1-black?style=flat-square&logo=github)](https://github.com/AhmedDAH1)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Ahmed_Dahdouh-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/ahmed-dahdouh)
+[![TryHackMe](https://img.shields.io/badge/TryHackMe-AhmedDAH1-212C42?style=flat-square&logo=tryhackme)](https://tryhackme.com/p/AhmedDAH1)
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE)
