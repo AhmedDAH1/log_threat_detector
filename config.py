@@ -2,21 +2,23 @@
 # Central configuration for log-threat-detector
 # Adjust thresholds here without touching detection logic
 
+import os
+
 CONFIG = {
     "threat_intel": {
-    "enabled": True,
-    "abuseipdb_api_key": "***REMOVED***",
-    "min_abuse_score": 50,      # flag IPs with score above this
-    "cache_ttl_seconds": 3600,  # cache results for 1 hour
-},
+        "enabled": True,
+        "abuseipdb_api_key": os.environ.get("ABUSEIPDB_API_KEY", ""),
+        "min_abuse_score": 50,      # flag IPs with score above this
+        "cache_ttl_seconds": 3600,  # cache results for 1 hour
+    },
     "email": {
-    "enabled": False,
-    "smtp_host": "smtp.gmail.com",
-    "smtp_port": 587,
-    "sender_email": "",
-    "sender_password": "",
-    "recipient_email": "",
-},
+        "enabled": False,
+        "smtp_host": "smtp.gmail.com",
+        "smtp_port": 587,
+        "sender_email": os.environ.get("SMTP_SENDER_EMAIL", ""),
+        "sender_password": os.environ.get("SMTP_SENDER_PASSWORD", ""),
+        "recipient_email": os.environ.get("SMTP_RECIPIENT_EMAIL", ""),
+    },
     "brute_force": {
         "max_failed_attempts": 5,       # failed logins before alert
         "time_window_seconds": 60,      # within this time window
@@ -40,6 +42,5 @@ CONFIG = {
     "output": {
         "report_path": "output/report.json",
         "alert_level": "WARNING",       # INFO | WARNING | CRITICAL
-    }
-    
+    },
 }
