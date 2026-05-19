@@ -1,0 +1,16 @@
+services:
+  detector:
+    build: .
+    image: log-threat-detector:latest
+    container_name: log-threat-detector
+    ports:
+      - "5050:5000"
+    env_file:
+      - .env
+    environment:
+      - DASHBOARD_HOST=0.0.0.0
+    volumes:
+      - ./logs:/app/logs:ro
+      - ./output:/app/output
+    command: ["--watch", "logs/ssh.log", "--dashboard"]
+    restart: unless-stopped

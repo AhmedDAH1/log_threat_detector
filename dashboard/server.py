@@ -70,7 +70,10 @@ def on_connect():
     socketio.emit("init", get_stats())
 
 
-def start_dashboard(host: str = "127.0.0.1", port: int = 5000) -> None:
+def start_dashboard(host: str = None, port: int = None) -> None:
+    import os
+    host = host or os.environ.get("DASHBOARD_HOST", "127.0.0.1")
+    port = port or int(os.environ.get("DASHBOARD_PORT", "5000"))
     """Start the dashboard in a background thread."""
     thread = threading.Thread(
         target=lambda: socketio.run(app, host=host, port=port, debug=False, allow_unsafe_werkzeug=True),
