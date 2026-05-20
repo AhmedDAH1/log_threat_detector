@@ -41,6 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  python3 main.py --apache logs/apache.log --user-agent --anomaly\n"
             "  python3 main.py --syslog logs/syslog.log --port-scan --report out.json\n"
             "  python3 main.py --watch logs/ssh.log\n"
+            "  python3 main.py --demo\n"
             "  python3 main.py --history\n"
         )
     )
@@ -71,6 +72,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--dashboard",
         action="store_true",
         help="Launch web dashboard at http://localhost:5000"
+    )
+
+    watch_group.add_argument(
+        "--demo",
+        action="store_true",
+        help="Demo mode: run all detections on sample logs, then keep dashboard running"
     )
 
     # NEW: History
@@ -121,6 +128,11 @@ def run(args: argparse.Namespace) -> None:
         return
 
     all_alerts = []
+
+    # --demo flag: behaves like --all, then keeps dashboard alive
+    if args.demo:
+        args.all = True
+        args.dashboard = True
 
     # --all flag
     if args.all:
@@ -204,6 +216,15 @@ def run(args: argparse.Namespace) -> None:
 
     if args.report:
         generate_report(all_alerts, args.report)
+
+    # If --demo, keep the dashboard alive after the scan completes
+    if args.demo:
+        from dashboard.server import start_dashboard
+        print("\n✅ Demo data loaded. Dashboard running — press Ctrl+C to stop.")
+        start_dashboard()
+        # Block forever so the container doesn't exit
+        import threading
+        threading.Event().wait()
 
 
 if __name__ == "__main__":

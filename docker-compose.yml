@@ -12,5 +12,5 @@ services:
     volumes:
       - ./logs:/app/logs:ro
       - ./output:/app/output
-    command: ["--watch", "logs/ssh.log", "--dashboard"]
+    command: ["--demo"]
     restart: unless-stopped
