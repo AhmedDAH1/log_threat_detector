@@ -1,4 +1,8 @@
 # 🔍 Log Threat Detector
+> **🚀 [Live Demo →](https://log-threat-detector.onrender.com)** &nbsp;·&nbsp; Try the dashboard with pre-loaded real-world attack data.  
+> *Hosted on Render free tier — first load may take ~30 seconds while the container wakes.*
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Online-success?style=flat-square)](https://log-threat-detector.onrender.com)
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat-square&logo=python)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
