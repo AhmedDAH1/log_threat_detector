@@ -218,9 +218,12 @@ def run(args: argparse.Namespace) -> None:
         generate_report(all_alerts, args.report)
 
     # If --demo, keep the dashboard alive after the scan completes
+    # If --demo, push alerts to the dashboard and keep it alive
     if args.demo:
-        from dashboard.server import start_dashboard
-        print("\n✅ Demo data loaded. Dashboard running — press Ctrl+C to stop.")
+        from dashboard.server import start_dashboard, push_alert
+        for alert in all_alerts:
+            push_alert(alert)
+        print(f"\n✅ Demo data loaded ({len(all_alerts)} alerts). Dashboard running — press Ctrl+C to stop.")
         start_dashboard()
         # Block forever so the container doesn't exit
         import threading
