@@ -56,7 +56,10 @@ def detect_log_type(filepath: str) -> str:
     )
 
 
-def watch(filepath: str, interval: float = 1.0) -> None:
+SEVERITY_ORDER = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+
+
+def watch(filepath: str, interval: float = 1.0, forwarder=None, min_severity: str = "LOW") -> None:
     """
     Tails a log file and runs all relevant detections
     on the full file every time new lines are added.
@@ -99,6 +102,9 @@ def watch(filepath: str, interval: float = 1.0) -> None:
                                     _push_alert(alert)
                                 except Exception:
                                     pass
+
+                            if forwarder and SEVERITY_ORDER.index(alert.severity) >= SEVERITY_ORDER.index(min_severity):
+                                forwarder.send(alert)
 
                             # Send email if enabled and severity is HIGH or CRITICAL
                             if email_cfg.get("enabled") and alert.severity in ("HIGH", "CRITICAL"):

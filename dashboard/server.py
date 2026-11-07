@@ -11,7 +11,9 @@ from detection.base import Alert
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config["SECRET_KEY"] = "log-threat-detector-dashboard"
-socketio = SocketIO(app, cors_allowed_origins="*")
+# Same-origin only: with "*", any website open in the analyst's browser could
+# connect to the local dashboard's socket and read every alert.
+socketio = SocketIO(app)
 
 # In-memory alert store
 _alerts = []

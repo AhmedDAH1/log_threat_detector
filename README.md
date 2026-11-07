@@ -47,7 +47,7 @@ Try the [live demo](https://log-threat-detector.onrender.com), or run it locally
 
 | Detection | Log Source | Severity |
 |---|---|---|
-| Brute force login attempts | SSH logs | HIGH |
+| Brute force login attempts, including guesses at usernames that don't exist | SSH logs | HIGH |
 | Port scan detection | Syslog (UFW/iptables) | HIGH |
 | Suspicious user agents | Apache logs | MEDIUM |
 | Anomaly / high request rate | Apache logs | MEDIUM |
@@ -56,6 +56,7 @@ Try the [live demo](https://log-threat-detector.onrender.com), or run it locally
 | Real-time monitoring (`--watch`) | Any supported log | — |
 | Email alerting | Watch mode (HIGH/CRITICAL) | — |
 | Alert persistence | SQLite database | — |
+| Forwarding to [SOAR-Lite](https://github.com/AhmedDAH1/soar-lite) (`--forward`) | All alerts | — |
 
 ---
 
@@ -151,6 +152,9 @@ python3 main.py --demo
 
 # View alert history from the database
 python3 main.py --history
+
+# Send HIGH and CRITICAL alerts to SOAR-Lite as incidents
+SOAR_WEBHOOK_SECRET=... python3 main.py --all --severity HIGH --forward http://localhost:8000
 ```
 
 ---
@@ -181,6 +185,7 @@ History:
 Output options:
   --severity LEVEL  Minimum severity: LOW | MEDIUM | HIGH | CRITICAL (default: LOW)
   --report [FILE]   Save JSON report (default: output/report.json)
+  --forward URL     Send alerts to SOAR-Lite at URL (needs SOAR_WEBHOOK_SECRET)
 ```
 
 ---
@@ -192,6 +197,30 @@ All detected alerts are automatically saved to a local SQLite database (`alerts.
 ```bash
 python3 main.py --history
 ```
+
+---
+
+## Sending Alerts to SOAR-Lite
+
+Alerts can become incidents in [SOAR-Lite](https://github.com/AhmedDAH1/soar-lite),
+where IOCs are extracted and enriched, playbooks escalate them and an analyst
+works the case. Detection here, response there, as in a real SOC.
+
+```bash
+# On the SOAR-Lite side
+export WEBHOOK_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+uvicorn app.main:app
+
+# Here, with the same secret
+export SOAR_WEBHOOK_SECRET=<the same value>
+python3 main.py --all --severity HIGH --forward http://localhost:8000
+python3 main.py --watch /var/log/auth.log --forward http://localhost:8000   # live
+```
+
+Each alert is sent to SOAR-Lite's SIEM webhook, signed with HMAC-SHA256 over a
+timestamp and the body, which SOAR-Lite verifies before creating an incident.
+If SOAR-Lite is down or refuses an alert, a warning is printed and detection
+carries on.
 
 ---
 
@@ -238,9 +267,10 @@ log_threat_detector/
 │   ├── alert_output.py        # Colored terminal output with severity filter
 │   ├── json_report.py         # JSON report generator
 │   ├── email_alert.py         # Email notifications for HIGH/CRITICAL alerts
+│   ├── soar_forwarder.py      # Signed webhooks to SOAR-Lite
 │   └── db.py                  # SQLite alert persistence and history
 ├── logs/                      # Sample log files
-├── tests/                     # Unit tests (14 tests)
+├── tests/                     # Unit tests (30 tests)
 └── requirements.txt
 ```
 
@@ -298,7 +328,8 @@ This project maps directly to core SOC analyst and detection engineering compete
 | Cloud deployment | Live on Render with Docker runtime |
 | Real-time data streaming | Flask + SocketIO dashboard with WebSocket alert push |
 | Database persistence | SQLite with deduplication keys |
-| CI/CD | GitHub Actions running 14 unit tests on every push |
+| Integration | `output/soar_forwarder.py` — signed webhooks to SOAR-Lite |
+| CI/CD | GitHub Actions running 30 unit tests on every push |
 | Reporting | JSON output for downstream tooling |
 
 ---
@@ -339,7 +370,7 @@ CONFIG = {
 - **Containerization**: Docker + docker-compose
 - **Deployment**: Render (Docker runtime, free tier)
 - **External API**: AbuseIPDB for live threat intelligence
-- **CI**: GitHub Actions — 14 tests run automatically on every push
+- **CI**: GitHub Actions — 30 tests run automatically on every push
 - **Architecture**: Modular — parsers, detectors, and output fully decoupled
 
 ---
@@ -348,7 +379,7 @@ CONFIG = {
 
 ```bash
 make run      # run all detections on default log files
-make test     # run all 14 unit tests
+make test     # run all 30 unit tests
 make watch    # start live monitoring on ssh log
 make clean    # remove cache and generated reports
 ```

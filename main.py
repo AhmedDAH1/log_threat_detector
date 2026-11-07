@@ -3,6 +3,7 @@
 # Usage: python3 main.py --help
 
 import argparse
+import os
 import sys
 from colorama import Fore, Style, init
 from detection.correlation import correlate_alerts
@@ -41,6 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  python3 main.py --apache logs/apache.log --user-agent --anomaly\n"
             "  python3 main.py --syslog logs/syslog.log --port-scan --report out.json\n"
             "  python3 main.py --watch logs/ssh.log\n"
+            "  python3 main.py --all --forward http://localhost:8000\n"
             "  python3 main.py --demo\n"
             "  python3 main.py --history\n"
         )
@@ -105,10 +107,34 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Save JSON report (default path: {CONFIG['output']['report_path']})"
     )
 
+    outputs.add_argument(
+        "--forward",
+        metavar="URL",
+        help=(
+            "Send alerts to SOAR-Lite at URL (e.g. http://localhost:8000).\n"
+            "Needs SOAR_WEBHOOK_SECRET set to SOAR-Lite's WEBHOOK_SECRET.\n"
+            "Only alerts at or above --severity are sent."
+        )
+    )
+
     return parser
 
 
+SEVERITY_ORDER = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+
+
+def make_forwarder(url):
+    """A SoarForwarder for --forward, or exit with a clear message."""
+    from output.soar_forwarder import SoarForwarder
+    try:
+        return SoarForwarder(url, os.environ.get("SOAR_WEBHOOK_SECRET", ""))
+    except ValueError as e:
+        sys.exit(f"--forward: {e}")
+
+
 def run(args: argparse.Namespace) -> None:
+
+    forwarder = make_forwarder(args.forward) if args.forward else None
 
     # Initialize database
     init_db()
@@ -124,7 +150,7 @@ def run(args: argparse.Namespace) -> None:
             from detection.watch_mode import enable_dashboard
             start_dashboard()
             enable_dashboard()
-        watch(args.watch)
+        watch(args.watch, forwarder=forwarder, min_severity=args.severity)
         return
 
     all_alerts = []
@@ -216,6 +242,13 @@ def run(args: argparse.Namespace) -> None:
 
     if args.report:
         generate_report(all_alerts, args.report)
+
+    if forwarder:
+        minimum = SEVERITY_ORDER.index(args.severity)
+        to_send = [a for a in all_alerts if SEVERITY_ORDER.index(a.severity) >= minimum]
+        print(f"── Forwarding {len(to_send)} alert(s) to SOAR-Lite ───────────")
+        sent = forwarder.send_all(to_send)
+        print(f"  {sent}/{len(to_send)} accepted\n")
 
     # If --demo, keep the dashboard alive after the scan completes
     # If --demo, push alerts to the dashboard and keep it alive

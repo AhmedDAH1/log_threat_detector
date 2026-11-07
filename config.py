@@ -29,7 +29,8 @@ CONFIG = {
     },
     "suspicious_user_agents": [
         "sqlmap", "nikto", "nmap", "masscan",
-        "zgrab", "dirbuster", "curl", "python-requests"
+        "zgrab", "dirbuster", "curl", "python-requests",
+        "netscan",  # https://github.com/AhmedDAH1/network-scanner (sent during --vuln scans)
     ],
     "anomaly": {
         "request_rate_per_minute": 100, # requests/min before flagging

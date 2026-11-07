@@ -324,6 +324,12 @@
 
     socket.on("connect", () => console.log("Dashboard connected"));
 
+    function esc(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
     socket.on("new_alert", (alert) => {
       const total = parseInt(document.getElementById("stat-total").textContent) + 1;
       document.getElementById("stat-total").textContent = total;
@@ -346,20 +352,22 @@
         : alert.description;
 
       const intel = alert.intel
-        ? `<div class="alert-intel">${alert.intel}</div>`
+        ? `<div class="alert-intel">${esc(alert.intel)}</div>`
         : "";
 
+      // Alert text comes from log lines, which attackers write (a username
+      // tried over SSH, a User-Agent): every value is escaped.
       const item = document.createElement("div");
       item.className = "alert-item";
       item.innerHTML = `
         <div class="alert-top">
-          <span class="sev sev-${alert.severity}">${alert.severity}</span>
-          <span class="alert-type">${alert.alert_type}</span>
-          <span class="alert-ip">${alert.source_ip}</span>
+          <span class="sev sev-${esc(alert.severity)}">${esc(alert.severity)}</span>
+          <span class="alert-type">${esc(alert.alert_type)}</span>
+          <span class="alert-ip">${esc(alert.source_ip)}</span>
         </div>
-        <div class="alert-desc">${desc}</div>
+        <div class="alert-desc">${esc(desc)}</div>
         ${intel}
-        <div class="alert-time">${alert.timestamp} · ${alert.evidence} log line(s)</div>
+        <div class="alert-time">${esc(alert.timestamp)} · ${esc(alert.evidence)} log line(s)</div>
       `;
       feed.insertBefore(item, feed.firstChild);
     });
