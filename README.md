@@ -14,6 +14,26 @@ A SIEM-style threat detection CLI that parses SSH, Apache, and syslog files to d
 
 ---
 
+## Analysis API
+
+`analysis_api.py` serves the detections over HTTP, so another tool can hand
+over log files and get the alerts back. [SOAR-Lite](https://github.com/AhmedDAH1/soar-lite)'s
+"Analyze logs" page uses it to turn uploaded logs into incidents.
+
+```bash
+python3 analysis_api.py            # http://127.0.0.1:5001 (HOST and PORT to change)
+curl -s localhost:5001/api/analyze -H 'Content-Type: application/json' \
+  -d '{"logs": [{"name": "auth.log", "content": "...", "type": "auto"}]}'
+```
+
+`type` is `auto` (the parser that recognises the most lines wins), `ssh`,
+`apache` or `syslog`. The correlation engine runs across every log in the
+request, so a brute force in `auth.log` and a port scan in `ufw.log` from the
+same address come back as one `COORDINATED_ATTACK`. Alerts use the same format
+as `--forward`.
+
+---
+
 ## Why I Built This
 
 I'm a Software Engineering student specializing in cybersecurity, working toward a SOC analyst / detection engineer role. Reading about how SIEMs like Splunk and Elastic correlate alerts across log sources, I wanted to understand the mechanics myself — not by reading documentation, but by building one. This project is the result: a working multi-source log parser, sliding-window detection engine, and correlation layer that fires `CRITICAL` alerts when the same IP triggers reconnaissance patterns across different log types. The goal was to internalize how detection engineering actually works at the code level.

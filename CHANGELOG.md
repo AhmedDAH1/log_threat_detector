@@ -3,6 +3,15 @@
 All notable changes to Log Threat Detector. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-11-08
+
+### Added
+- **Analysis API** (`analysis_api.py`): `POST /api/analyze` takes one or more
+  log files as text, detects whether each is an SSH, web server or firewall
+  log, runs every detection and the correlation engine across all of them,
+  and returns the alerts in the format `--forward` sends to SOAR-Lite.
+  SOAR-Lite's "Analyze logs" page uses it. 5 MB per request.
+
 ## [1.2.0] - 2026-11-08
 
 ### Added
